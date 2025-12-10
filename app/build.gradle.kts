@@ -47,7 +47,7 @@ android {
 }
 
 dependencies {
-    implementation(project(":LogKit"))
+    implementation("com.github.mohanchandrasekar:LogKit:v1.0.0")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)

@@ -1,18 +1,15 @@
-Here is a polished, **GitHub-ready README.md**, fully aligned with your library, setup, and test app code.
-Completely copy-pasteable. Professional, clean, and developer-friendly.
-
----
-
 # 📘 LogKit – Safe, Clickable, Automotive-Aware Logging for Android
+
+[![](https://jitpack.io/v/mohanchandrasekar/LogKit.svg)](https://jitpack.io/#mohanchandrasekar/LogKit)
 
 **LogKit** is a lightweight logging library for Android & Android Automotive apps, designed with:
 
 ✅ Simple Kotlin & Java API (similar to Timber)
 ✅ Clickable file/line navigation in Logcat
-✅ Automatic removal of VERBOSE/DEBUG logs in release builds
-✅ Sensitive-data detection & blocking (VIN, VehiclePropertyIds, tokens, GPS, PII…)
-✅ Zero-config integration
-✅ BuildConfig-aware behavior
+✅ Automatic hide of VERBOSE/DEBUG logs in release
+✅ Sensitive-data detection (VIN, VHAL, SOC, GPS, tokens, PII…)
+✅ No configuration required
+✅ BuildConfig-aware runtime behavior
 
 ---
 
@@ -28,68 +25,77 @@ Completely copy-pasteable. Professional, clean, and developer-friendly.
 | `WARN`    | ✔ shown     | ✔ shown       |
 | `ERROR`   | ✔ shown     | ✔ shown       |
 
+---
+
 ### ✔ Sensitive Log Protection
 
-LogKit scans messages for automotive-sensitive terms:
+LogKit automatically detects automotive-sensitive terms:
 
-* **VIN**, vehicle ID, chassis ID
-* **VehiclePropertyIds**, VHAL values
-* **Battery / SOC / range**
-* **Location (lat/lng/gps)**
-* **Tokens / session IDs / passwords**
-* **User PII (email, phone, contacts)**
-* **API URLs, internal endpoints**
+* VIN, vehicle ID, chassis ID
+* VHAL / **VehiclePropertyIds**
+* Battery / SOC / range
+* GPS / lat-lng
+* Tokens, passwords, session IDs
+* User PII (email, phone, contact)
+* Internal API URLs / endpoints
 
-Behavior based on `BuildConfig.ALLOW_SENSITIVE_LOGS`:
+`BuildConfig.ALLOW_SENSITIVE_LOGS` controls behavior:
 
-* Debug: allowed but warns (`LogKitGuard`)
-* Release: **blocked completely**
+* **Debug** → Allowed (but warning shown)
+* **Release** → ❌ Blocked completely
 
-### ✔ Clickable file/line in Logcat
+---
 
-LogKit injects:
+### ✔ Clickable Logs (file/line)
+
+LogKit adds:
 
 ```
 at com.example.MainActivity.onCreate(MainActivity.kt:42)
 ```
 
-Android Studio makes this clickable → instantly jumps to the source.
+Android Studio makes it clickable → jumps to that exact line.
 
 ---
 
-# 📦 Installation
+# 📦 Installation (via JitPack)
 
-### 1️⃣ Add module to project
+### 1️⃣ Add JitPack repository
 
-Place LogKit inside your project:
-
-```
-root/
- ├─ app/
- └─ logkit/   ← this library module
-```
-
-In `settings.gradle.kts`:
+In **settings.gradle.kts**:
 
 ```kotlin
-include(":app", ":logkit")
-```
-
-In `app/build.gradle.kts`:
-
-```kotlin
-dependencies {
-    implementation(project(":logkit"))
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url = uri("https://jitpack.io") }
+    }
 }
 ```
 
 ---
 
+### 2️⃣ Add the LogKit dependency
+
+In **app/build.gradle.kts**:
+
+```kotlin
+dependencies {
+    implementation("com.github.mohanchandrasekar:logKit:v1.0.0")
+}
+```
+
+👉 Always check the latest version:
+[https://jitpack.io/#mohanchandrasekar/LogKit](https://jitpack.io/#mohanchandrasekar/LogKit)
+
+---
+
 # ⚙️ App Setup
 
-### 2️⃣ Enable BuildConfig flags
+### 3️⃣ Enable BuildConfig flags in your app
 
-Inside **app module** `app/build.gradle.kts`:
+Add inside **app module** `build.gradle.kts`:
 
 ```kotlin
 android {
@@ -111,7 +117,7 @@ android {
 
 ---
 
-### 3️⃣ Initialize LogKit in Application
+### 4️⃣ Initialize LogKit in Application
 
 `MyApp.kt`:
 
@@ -129,7 +135,7 @@ class MyApp : Application() {
 }
 ```
 
-Add in `AndroidManifest.xml`:
+Register in `AndroidManifest.xml`:
 
 ```xml
 <application
@@ -139,95 +145,66 @@ Add in `AndroidManifest.xml`:
 
 ---
 
-# 🧪 Example Usage (Your Test App Code)
-
-### MainActivity
+# 🧪 Example Usage (Demo App Code)
 
 ```kotlin
-package com.logkit.core
-
-import android.os.Bundle
-import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-
 private const val TAG = "LogKitDemo"
 
-class MainActivity : AppCompatActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContentView(R.layout.activity_main)
+private fun testNormalLogs() {
+    LogKit.v(TAG) { "Verbose log – only in DEBUG" }
+    LogKit.d(TAG) { "Debug log – only in DEBUG" }
+    LogKit.i(TAG) { "Info log – DEBUG + RELEASE" }
+    LogKit.w(TAG) { "Warning log – DEBUG + RELEASE" }
+    LogKit.e(TAG) { "Error log – DEBUG + RELEASE" }
+}
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
+private fun testSensitiveLogs() {
+    val vin = "W0L000000000VIN1234"
 
-        testNormalLogs()
-        testSensitiveLogs()
-    }
-
-    private fun testNormalLogs() {
-        LogKit.v(TAG) { "Verbose log – should appear only in DEBUG build" }
-        LogKit.d(TAG) { "Debug log – should appear only in DEBUG build" }
-        LogKit.i(TAG) { "Info log – should appear in DEBUG + RELEASE" }
-        LogKit.w(TAG) { "Warning log – should appear in DEBUG + RELEASE" }
-        LogKit.e(TAG) { "Error log – should appear in DEBUG + RELEASE" }
-    }
-
-    private fun testSensitiveLogs() {
-        val vin = "W0L000000000VIN1234"
-
-        LogKit.i(TAG) { "Car VIN=$vin" }
-        LogKit.d(TAG) { "Debug: sending token=ABC123XYZ for telemetry" }
-    }
+    LogKit.i(TAG) { "Car VIN=$vin" }
+    LogKit.d(TAG) { "Sending token=ABC123XYZ" }
 }
 ```
 
 ---
 
-# 🔍 What You'll See in Logcat
+# 🔍 Logcat Output
 
-### Debug build:
-
-```
-at com.example.MainActivity.testNormalLogs(MainActivity.kt:34)
-Verbose log – should appear only in DEBUG build
-```
-
-### Release build:
+### Debug Build
 
 ```
-Info log – should appear in DEBUG + RELEASE
-Warning log – should appear in DEBUG + RELEASE
-Error log – should appear in DEBUG + RELEASE
+V/LogKitDemo: Verbose log – only in DEBUG
+D/LogKitDemo: Debug log – only in DEBUG
+I/LogKitDemo: Info log – shown
 ```
 
-Sensitive logs:
+Sensitive logs allowed (with guard warning).
 
-* Allowed in debug (with a guard warning)
-* Blocked in release
+---
+
+### Release Build
+
+```
+I/LogKitDemo: Info log – shown
+W/LogKitDemo: Warning log – shown
+E/LogKitDemo: Error log – shown
+```
+
+Sensitive logs → **hidden**
+Verbose/Debug → **hidden**
 
 ---
 
 # 🔐 Sensitive Data Guard Logic
 
-LogKit auto-detects and blocks:
-
-* VIN
-* VehiclePropertyIds, VHAL
-* SOC, battery, range
-* lat/lng/GPS
-* token, access_token, refresh_token
-* email, phone_number, user_id
-* internal API URLs
-
-Behavior example:
+Examples:
 
 ```kotlin
 LogKit.i("TAG") { "VIN=W0L123..." }  // RELEASE → BLOCKED
 LogKit.d("TAG") { "token=abcd" }    // RELEASE → BLOCKED
+LogKit.e("TAG") { "email=a@b.com" } // RELEASE → BLOCKED
 ```
+
+LogKit will block these and print a safe replacement.
+
+---
